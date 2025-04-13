@@ -1,9 +1,6 @@
 -- UI-related functions for teleproompter
 local ui = {}
 
--- Reference to main module
-local _M = nil
-
 -- Telescope integration function
 function ui.toggle_telescope(harpoon_files)
     local file_paths = {}
@@ -23,13 +20,9 @@ function ui.toggle_telescope(harpoon_files)
 end
 
 -- Function to display all lists in a single window
-function ui.show_all_lists_window()
-    if not _M then
-        error("UI module not initialized")
-    end
+function ui.show_all_lists_window(lists)
 
-    local harpoon = _M.harpoon
-    local lists = _M.lists
+    local harpoon = require("harpoon")
 
     -- Create a new buffer for our window
     local buf = vim.api.nvim_create_buf(false, true)
@@ -155,13 +148,11 @@ function ui.show_all_lists_window()
 end
 
 -- Function to open a more interactive window with telescope
-function ui.show_all_lists_telescope()
-    if not _M then
-        error("UI module not initialized")
-    end
+---comment
+---@param lists List
+function ui.show_all_lists_telescope(lists)
 
-    local lists = _M.lists
-    local combined_items = lists.get_combined_items()
+    local combined_items = lists:get_combined_items()
 
     -- Prepare results for telescope
     local results = {}
@@ -308,12 +299,6 @@ function ui.show_output_window(output, title)
     vim.api.nvim_buf_set_lines(buf, #lines, #lines + 2, false, { "", "Press 'q' to close, 'y' to copy all content" })
 
     return win, buf
-end
-
--- Initialize the module with a reference to the main module
-function ui.init(main_module)
-    _M = main_module
-    return ui
 end
 
 return ui

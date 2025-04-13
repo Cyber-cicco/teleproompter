@@ -1,21 +1,25 @@
--- Command execution functions for teleproompter
-local commands = {}
+--- @class Commands
+--- @field list ListsOpts
+local Commands = {}
+Commands.__index = Commands
 
--- Reference to main module
-local _M = nil
+
+---@param list List
+function Commands:new(list)
+    local cmd = setmetatable({
+        list = list
+    }, self)
+    return cmd
+end
 
 -- Function to add a command to the CMD_CONTEXT list
-function commands.add_command_to_list()
-    if not _M then
-        error("Commands module not initialized")
-    end
+function Commands:add_command_to_list()
 
-    local lists = _M.lists
-    local harpoon = _M.harpoon
+    local harpoon = require("harpoon")
 
     vim.ui.input({ prompt = "Enter command: " }, function(cmd)
         if cmd and cmd ~= "" then
-            harpoon:list(lists.CMD_CONTEXT):append({
+            harpoon:list(self.list.cmd_context_list):append({
                 value = cmd,
                 context = { cmd = cmd }
             })
@@ -24,17 +28,13 @@ function commands.add_command_to_list()
     end)
 end
 
--- Function to execute commands from CMD_CONTEXT list and copy output to clipboard
-function commands.execute_commands_and_copy_output()
-    if not _M then
-        error("Commands module not initialized")
-    end
+--- Function to execute commands from CMD_CONTEXT list and copy output to clipboard
+function Commands:execute_commands_and_copy_output()
 
-    local lists = _M.lists
-    local harpoon = _M.harpoon
+    local harpoon = require("harpoon")
     local all_outputs = {}
 
-    for i, item in ipairs(harpoon:list(lists.CMD_CONTEXT).items) do
+    for i, item in ipairs(harpoon:list(self.list.cmd_context_list).items) do
         local cmd = item.value
         vim.notify("Executing command: " .. cmd)
 
@@ -56,8 +56,10 @@ function commands.execute_commands_and_copy_output()
     end
 end
 
--- Function to execute a single command and return its output
-function commands.execute_command(cmd)
+--- comment
+--- @param cmd? string
+--- @return string?, string?
+function Commands.execute_command(cmd)
     if not cmd or cmd == "" then
         return nil, "Empty command"
     end
@@ -66,10 +68,5 @@ function commands.execute_command(cmd)
     return output
 end
 
--- Initialize the module with a reference to the main module
-function commands.init(main_module)
-    _M = main_module
-    return commands
-end
+return Commands
 
-return commands
