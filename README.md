@@ -1,13 +1,34 @@
 # Teleproompter Plugin for Neovim
 
-Teleproompter is a plugin that extends Harpoon to enable quick creation, management, and usage of context files for LLM prompting. It allows you to organize files into different categories (context, resources, instructions) and execute commands directly from Neovim.
+Teleproompter is a plugin that extends Harpoon to enable quick creation, management, and usage of context files for LLM prompting. It allows you to organize files into different categories (context, resources, instructions) and put results of command executions inside the prompt.
+
+## Problems
+
+1. Instead of pivoting to AI editors, you'd rather integrate your LLM prompting framework into the optimized
+file navigation and text editing capabilities from Neovim.
+
+2. You want to specifically craft the LLM prompt you know is right for the task at hand, wihtout relying
+on it crawling all of your codebase, wasting time and tokens away.
+
+3. You're a cheap f*ck that lives in Europe and codes 16 hours a day, so you can't afford to send 60 M tokens to Claude per day
+(but you have a Claude pro subscription and the chat is way cheaper than the API).
+
+## Solutions
+
+* You probably already have the context your LLM needs in your head. And as a neovim user bent on having a navigation
+system where everything you need is at your fingertips, it is probably also in harpoon. So using harpoon as a source
+for a list of file and commands to give to a LLM sounds like a good idea.
+
+* So the whole workflow would be putting project files into separate harpoon lists representing specific parts of the prompt, 
+have a way to visualize all these files and navigate to it instantly to edit them, and finally, craft the output from the file
+content and the command outputs.
 
 ## Prerequisites
 
 The plugin requires:
-- Neovim >= 0.7.0
-- [Harpoon](https://github.com/ThePrimeagen/harpoon)
-- [Telescope](https://github.com/nvim-telescope/telescope.nvim) (for advanced file navigation)
+- Neovim >= 0.10.0
+- [Harpoon 2](https://github.com/ThePrimeagen/harpoon)
+- [Telescope](https://github.com/nvim-telescope/telescope.nvim) 
 
 ## Installation
 
@@ -63,7 +84,6 @@ require('teleproompter').setup()
 
 Teleproompter organizes files into four different lists:
 
-1. **Main List** - Regular Harpoon file list
 2. **Context List** - Files containing context information for LLM prompts
 3. **Resources List** - Reference files or resources
 4. **Instructions List** - Files containing instructions for LLMs
@@ -72,7 +92,6 @@ Teleproompter organizes files into four different lists:
 ### Default Keybindings
 
 #### Adding Files to Lists
-- `<leader>a` - Add current file to main list
 - `<leader>c` - Add current file to context list
 - `<leader>r` - Add current file to resources list
 - `<leader>i` - Add current file to instructions list
@@ -81,18 +100,12 @@ Teleproompter organizes files into four different lists:
 - `<leader>tc` - Add a command to the command context list
 
 #### Toggling Lists
-- `<leader>e` - Toggle main list
 - `<leader>lc` - Toggle context list
 - `<leader>lt` - Toggle command context list
 - `<leader>lr` - Toggle resources list
 - `<leader>li` - Toggle instructions list
 - `<leader>la` - Show all lists in a single window
 - `<leader>ls` - Show all lists in telescope
-
-#### Navigation
-- `&`, `é`, `"`, `'`, `(`, `-` - Navigate to items 1-6 in the main list
-- `<leader>P` - Go to previous file in list
-- `<leader>N` - Go to next file in list
 
 #### Clipboard Operations
 - `<leader>yc` - Copy contents of all marked files to clipboard
@@ -118,17 +131,6 @@ require('teleproompter').setup({
     }
 })
 ```
-
-## Converting from your existing setup
-
-If you're currently using the harpoon setup from the original configuration, you can replace your `after/plugin/harpoon.lua` file with a simple setup:
-
-```lua
--- after/plugin/teleproompter.lua
-require('teleproompter').setup()
-```
-
-All your existing functionality should continue to work with the same keybindings.
 
 ## License
 

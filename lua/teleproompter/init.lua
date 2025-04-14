@@ -60,7 +60,6 @@ Teleproompter.__index = Teleproompter
 ---@param opts? TeleProompterOpts
 function Teleproompter.setup(opts)
     local instance = Teleproompter:new(opts)
-    print(instance.lists.context_list)
     instance:setup_keymaps()
     return instance
 end
@@ -87,7 +86,6 @@ end
 
 -- Keymaps setup function
 function Teleproompter:setup_keymaps()
-    print("caca")
     local keymaps = self.keymaps
     local lists = self.lists
     local harpoon = require("harpoon")

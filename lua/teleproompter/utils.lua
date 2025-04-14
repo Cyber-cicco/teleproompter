@@ -28,7 +28,6 @@ end
 
 -- Function to copy contents of all items in lists to clipboard
 function Utils:copy_all_items_to_clipboard()
-    print("caca")
 
     local harpoon = require("harpoon")
     local lists = self.lists
