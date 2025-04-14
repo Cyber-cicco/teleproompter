@@ -92,7 +92,7 @@ function Utils:copy_everything_to_clipboard()
     end
 
     -- Get command outputs from CMD_CONTEXT list
-    for i, item in ipairs(harpoon:list(self.lists.context_list).items) do
+    for i, item in ipairs(harpoon:list(self.lists.cmd_context_list).items) do
         local cmd = item.value
         local output = vim.fn.system(cmd)
         if output then

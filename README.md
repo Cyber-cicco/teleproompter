@@ -21,7 +21,7 @@ for a list of file and commands to give to a LLM sounds like a good idea.
 
 * So the whole workflow would be putting project files into separate harpoon lists representing specific parts of the prompt, 
 have a way to visualize all these files and navigate to it instantly to edit them, and finally, craft the output from the file
-content and the command outputs.
+content and the command outputs to put it in the clipboard.
 
 ## Prerequisites
 
@@ -82,12 +82,12 @@ require('teleproompter').setup()
 
 ### Basic Concepts
 
-Teleproompter organizes files into four different lists:
+Teleproompter organizes files into four different lists by default:
 
-2. **Context List** - Files containing context information for LLM prompts
-3. **Resources List** - Reference files or resources
-4. **Instructions List** - Files containing instructions for LLMs
-5. **Command Context List** - Shell commands to execute
+1. **Context List** - Files containing context information for LLM prompts
+2. **Resources List** - Reference files or resources
+3. **Instructions List** - Files containing instructions for LLMs
+4. **Command Context List** - Shell commands to execute
 
 ### Default Keybindings
 
