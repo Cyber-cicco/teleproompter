@@ -7,7 +7,7 @@ Teleproompter is a plugin that extends Harpoon to enable quick creation, managem
 1. Instead of pivoting to AI editors, you'd rather integrate your LLM prompting framework into the optimized
 file navigation and text editing capabilities from Neovim.
 
-2. You want to specifically craft the LLM prompt you know is right for the task at hand, wihtout relying
+2. You want to specifically craft the LLM prompt you know is right for the task at hand, without relying
 on it crawling all of your codebase, wasting time and tokens away.
 
 3. You're a cheap f*ck that lives in Europe and codes 16 hours a day, so you can't afford to send 60 M tokens to Claude per day
@@ -82,12 +82,14 @@ require('teleproompter').setup()
 
 ### Basic Concepts
 
-Teleproompter organizes files into four different lists by default:
+Teleproompter organizes files into different lists, each with specific purposes:
 
 1. **Context List** - Files containing context information for LLM prompts
-2. **Resources List** - Reference files or resources
-3. **Instructions List** - Files containing instructions for LLMs
-4. **Command Context List** - Shell commands to execute
+2. **Command Context List** - Shell commands to execute and include their output
+3. **Resources List** - Reference files or resources
+4. **Instructions List** - Files containing instructions for LLMs
+
+Each list is managed separately but can be viewed and manipulated together. The plugin leverages Harpoon's list functionality to maintain these lists.
 
 ### Default Keybindings
 
@@ -96,21 +98,35 @@ Teleproompter organizes files into four different lists by default:
 - `<leader>r` - Add current file to resources list
 - `<leader>i` - Add current file to instructions list
 
-#### Adding Commands
-- `<leader>tc` - Add a command to the command context list
+#### Toggling List Menus
+- `<leader>lc` - Toggle context list menu
+- `<leader>lt` - Toggle command context list menu
+- `<leader>lr` - Toggle resources list menu
+- `<leader>li` - Toggle instructions list menu
 
-#### Toggling Lists
-- `<leader>lc` - Toggle context list
-- `<leader>lt` - Toggle command context list
-- `<leader>lr` - Toggle resources list
-- `<leader>li` - Toggle instructions list
+#### List Views
 - `<leader>la` - Show all lists in a single window
-- `<leader>ls` - Show all lists in telescope
+- `<leader>ls` - Show all lists in Telescope
+- `<C-e>` - Toggle Telescope with Harpoon integration
+
+#### Commands
+- `<leader>tc` - Add a command to the command context list
 
 #### Clipboard Operations
 - `<leader>yc` - Copy contents of all marked files to clipboard
 - `<leader>ye` - Execute commands and copy output to clipboard
 - `<leader>ya` - Copy all content and command outputs to clipboard
+
+### List Management
+
+When viewing lists, you can:
+- Press `q` to close the list window
+- Press `y` to copy all content to clipboard
+- Press `o` to set item order (in the all lists view)
+
+In Telescope view, you can:
+- Press `<CR>` to select and open a file/execute a command
+- Press `<C-y>` to copy the selected item's content
 
 ### Customization
 
@@ -118,19 +134,84 @@ You can customize the plugin by passing options to the setup function:
 
 ```lua
 require('teleproompter').setup({
-    keymaps = {
-        -- Override default keymaps
-        add_main = "<leader>ha",
-        add_context = "<leader>hc",
-        -- ... other keymaps
-    },
+    -- Custom list configurations
     lists = {
-        -- Custom list names if needed
-        context_list = "__my_context_list__",
-        -- ... other list names
+        context = {
+            type = "file",
+            title = "My Context",
+            list_name = "__my_context_list__",
+            order = 1,
+            key = "context",
+        },
+        custom_list = {
+            type = "file",
+            title = "Custom List",
+            list_name = "__my_custom_list__",
+            order = 5,
+            key = "custom_list",
+        },
+        -- Add more custom lists as needed
+    },
+    
+    -- Custom keymaps
+    keymaps = {
+        lists = {
+            context = "<leader>mc",
+            resources = "<leader>mr",
+            instructions = "<leader>mi",
+            custom_list = "<leader>mx"  -- For your custom list
+        },
+        toggle_lists = {
+            context = "<leader>tc",
+            cmd_context = "<leader>tt", 
+            resources = "<leader>tr",
+            instructions = "<leader>ti",
+            custom_list = "<leader>tx"  -- For your custom list
+        },
+        show_all_lists = "<leader>ta",
+        show_all_telescope = "<leader>ts",
+        copy_all = "<leader>yp",
+        add_command = "<leader>ac",
+        exec_commands = "<leader>ec",
+        copy_everything = "<leader>yy",
+        telescope_toggle = "<C-t>"
     }
 })
 ```
+
+### List Configuration Structure
+
+Each list is configured with the following properties:
+
+- `type` - The list type, either "file" or "command"
+- `title` - The display title for the list
+- `list_name` - The internal name used by Harpoon
+- `order` - The display order in combined views
+- `key` - The identifier used in configurations and API calls
+
+## Features
+
+### UI Windows
+
+Teleproompter provides various UI windows:
+- Individual list menus (via Harpoon)
+- Combined list view showing all lists in one window
+- Command output displays
+- Telescope integration for advanced filtering
+
+### Command Execution
+
+Commands added to the command list can be:
+- Executed individually
+- Executed all at once with output captured
+- Included in the final clipboard output
+
+### Telescope Integration
+
+The plugin integrates with Telescope to provide:
+- Advanced filtering of list items
+- File previews
+- Specialized actions for both files and commands
 
 ## License
 

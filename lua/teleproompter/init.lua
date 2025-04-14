@@ -4,13 +4,8 @@ local Ui = require("teleproompter.ui")
 local Utils = require("teleproompter.utils")
 
 --- @class KeyMapsOpts
---- @field add_context string
---- @field add_resources string
---- @field add_instructions string
---- @field toggle_context string
---- @field toggle_cmd_context string
---- @field toggle_resources string
---- @field toggle_instructions string
+--- @field lists table<string, string> Map of list keys to their add keymaps
+--- @field toggle_lists table<string, string> Map of list keys to their toggle keymaps
 --- @field show_all_lists string
 --- @field show_all_telescope string
 --- @field copy_all string
@@ -20,23 +15,51 @@ local Utils = require("teleproompter.utils")
 --- @field telescope_toggle string
 
 --- @class TeleProompterOpts
---- @field lists ListsOpts
+--- @field lists table<string, ListConfig>
 --- @field keymaps KeyMapsOpts
 local default_opts = {
     lists = {
-        context_list = "__teleproompter_context_list__",
-        cmd_context_list = "__teleproompter_cmd_context_list__",
-        resources_list = "__teleproompter_resources_list__",
-        instructions_list = "__teleproompter_instructions_list__"
+        context = {
+            type = "file",
+            title = "Context",
+            list_name = "__teleproompter_context_list__",
+            order = 1,
+            key = "context",
+        },
+        cmd_context = {
+            type = "command",
+            title = "Command Context",
+            list_name = "__teleproompter_cmd_context_list__",
+            order = 2,
+            key = "cmd_context",
+        },
+        resources = {
+            type = "file",
+            title = "Resources",
+            list_name = "__teleproompter_resources_list__",
+            order = 3,
+            key = "resources",
+        },
+        instructions = {
+            type = "file",
+            title = "Instructions",
+            list_name = "__teleproompter_instructions_list__",
+            order = 4,
+            key = "instructions",
+        }
     },
     keymaps = {
-        add_context = "<leader>c",
-        add_resources = "<leader>r",
-        add_instructions = "<leader>i",
-        toggle_context = "<leader>lc",
-        toggle_cmd_context = "<leader>lt",
-        toggle_resources = "<leader>lr",
-        toggle_instructions = "<leader>li",
+        lists = {
+            context = "<leader>c",
+            resources = "<leader>r",
+            instructions = "<leader>i"
+        },
+        toggle_lists = {
+            context = "<leader>lc",
+            cmd_context = "<leader>lt",
+            resources = "<leader>lr",
+            instructions = "<leader>li"
+        },
         show_all_lists = "<leader>la",
         show_all_telescope = "<leader>ls",
         copy_all = "<leader>yc",
@@ -75,7 +98,7 @@ function Teleproompter:new(user_opts)
     -- Store references
     local proompt = setmetatable({
         config = opts,
-        lists = list, -- Fixed: Changed 'list' to 'lists' to match the field name used in setup_keymaps
+        lists = list,
         commands = commands,
         utils = utils,
         keymaps = opts.keymaps,
@@ -90,40 +113,61 @@ function Teleproompter:setup_keymaps()
     local lists = self.lists
     local harpoon = require("harpoon")
 
-    -- Main list operations
-    vim.keymap.set("n", keymaps.add_context, function() harpoon:list(lists.context_list):add() end)
-    vim.keymap.set("n", keymaps.add_resources, function() harpoon:list(lists.resources_list):add() end)
-    vim.keymap.set("n", keymaps.add_instructions, function() harpoon:list(lists.instructions_list):add() end)
+    -- Setup keymaps for adding files to lists
+    if keymaps.lists then
+        for list_key, keymap in pairs(keymaps.lists) do
+            local list_name = lists:get_list_name(list_key)
+            if list_name then
+                vim.keymap.set("n", keymap, function()
+                    harpoon:list(list_name):add()
+                end, { desc = "Add current file to " .. lists:get_list_title(list_key) .. " list" })
+            end
+        end
+    end
 
-    -- Toggle menus
-    vim.keymap.set("n", keymaps.toggle_context,
-        function() harpoon.ui:toggle_quick_menu(harpoon:list(lists.context_list)) end)
-    vim.keymap.set("n", keymaps.toggle_cmd_context,
-        function() harpoon.ui:toggle_quick_menu(harpoon:list(lists.cmd_context_list)) end)
-    vim.keymap.set("n", keymaps.toggle_resources,
-        function() harpoon.ui:toggle_quick_menu(harpoon:list(lists.resources_list)) end)
-    vim.keymap.set("n", keymaps.toggle_instructions,
-        function() harpoon.ui:toggle_quick_menu(harpoon:list(lists.instructions_list)) end)
+    -- Setup toggle menus for lists
+    if keymaps.toggle_lists then
+        for list_key, keymap in pairs(keymaps.toggle_lists) do
+            local list_name = lists:get_list_name(list_key)
+            if list_name then
+                vim.keymap.set("n", keymap, function()
+                    harpoon.ui:toggle_quick_menu(harpoon:list(list_name))
+                end, { desc = "Toggle " .. lists:get_list_title(list_key) .. " list menu" })
+            end
+        end
+    end
 
     -- Telescope integration
-    vim.keymap.set("n", keymaps.telescope_toggle, function() Ui.toggle_telescope(harpoon:list()) end,
-        { desc = "Open harpoon window" })
+    vim.keymap.set("n", keymaps.telescope_toggle, function()
+        Ui.toggle_telescope(harpoon:list())
+    end, { desc = "Open harpoon window" })
 
     -- Clipboard operations
-    vim.keymap.set("n", keymaps.copy_all, function() self.utils:copy_all_items_to_clipboard() end,
-        { desc = "Copy contents of all marked files to clipboard" })
-    vim.keymap.set("n", keymaps.add_command, function() self.commands:add_command_to_list() end,
-        { desc = "Add command to CMD_CONTEXT list" })
-    vim.keymap.set("n", keymaps.exec_commands, function() self.commands:execute_commands_and_copy_output() end,
-        { desc = "Execute commands and copy output to clipboard" })
-    vim.keymap.set("n", keymaps.copy_everything, function() self.utils:copy_everything_to_clipboard() end,
-        { desc = "Copy all content and command outputs to clipboard" })
+    vim.keymap.set("n", keymaps.copy_all, function()
+        self.utils:copy_all_items_to_clipboard()
+    end, { desc = "Copy contents of all marked files to clipboard" })
 
-    -- For UI operations, if Ui is a module not an instance, use function wrapper
-    vim.keymap.set("n", keymaps.show_all_lists, function() Ui.show_all_lists_window(self.lists) end,
-        { desc = "Show all harpoon lists in one window" })
-    vim.keymap.set("n", keymaps.show_all_telescope, function() Ui.show_all_lists_telescope(self.lists) end,
-        { desc = "Show all harpoon lists in telescope" })
+    vim.keymap.set("n", keymaps.add_command, function()
+        self.commands:add_command_to_list()
+    end, { desc = "Add command to CMD_CONTEXT list" })
+
+    vim.keymap.set("n", keymaps.exec_commands, function()
+        self.commands:execute_commands_and_copy_output()
+    end, { desc = "Execute commands and copy output to clipboard" })
+
+    vim.keymap.set("n", keymaps.copy_everything, function()
+        self.utils:copy_everything_to_clipboard()
+    end, { desc = "Copy all content and command outputs to clipboard" })
+
+    -- For UI operations
+    vim.keymap.set("n", keymaps.show_all_lists, function()
+        Ui.show_all_lists_window(self.lists)
+    end, { desc = "Show all harpoon lists in one window" })
+
+    vim.keymap.set("n", keymaps.show_all_telescope, function()
+        Ui.show_all_lists_telescope(self.lists)
+    end, { desc = "Show all harpoon lists in telescope" })
 end
 
 return Teleproompter
+

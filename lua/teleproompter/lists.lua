@@ -1,8 +1,12 @@
+--- @class ListConfig
+--- @field type string "file" or "command"
+--- @field title string Section title for the list
+--- @field list_name string The internal name for the harpoon list
+--- @field order number The order in the list
+--- @field key string The key of the map
+
 --- @class ListsOpts
---- @field context_list string
---- @field cmd_context_list string
---- @field resources_list string
---- @field instructions_list string
+--- @field [string] ListConfig Custom list configurations
 
 --- @class HarpoonList
 --- @field config HarpoonPartialConfigItem
@@ -34,54 +38,92 @@
 
 --- List definitions and management for teleproompter
 --- @class List
---- @field context_list string
---- @field cmd_context_list string
---- @field resources_list string
---- @field instructions_list string
+--- @field lists table<string, ListConfig> Map of list IDs to their configurations
 local List = {}
 List.__index = List
 
-
----comment
 ---@param opts ListsOpts
 ---@return List
 function List:new(opts)
     local list = setmetatable({
-        context_list = opts.context_list,
-        cmd_context_list = opts.cmd_context_list,
-        resources_list = opts.resources_list,
-        instructions_list = opts.instructions_list,
+        lists = opts or {},
     }, self)
     return list
 end
 
--- Get all list names
+-- Get all list names (internal harpoon list names)
 function List:get_all_names()
-    return {
-        self.context_list,
-        self.resources_list,
-        self.cmd_context_list,
-        self.instructions_list,
-    }
+    local names = {}
+    for _, config in pairs(self:get_list()) do
+        table.insert(names, config.list_name)
+    end
+    return names
 end
 
----@return {
----     cmd_context: HarpoonItem[],
----     context: HarpoonItem[],
----     instructions: HarpoonItem[],
----     main: HarpoonItem[],
----     resources: HarpoonItem[],
---- }
+---@return ListConfig[]
+function List:get_list()
+    local sorted = {}
+    for _, config in pairs(self.lists) do
+        table.insert(sorted, config)
+    end
+    table.sort(sorted, function(a, b)
+        return (a.order or math.huge) > (b.order or math.huge)
+    end)
+    return sorted
+end
 
+-- Get a specific list name by key
+function List:get_list_name(key)
+    if self.lists[key] then
+        return self.lists[key].list_name
+    end
+    return nil
+end
+
+-- Get list type (file or command)
+function List:get_list_type(key)
+    if self.lists[key] then
+        return self.lists[key].type
+    end
+    return nil
+end
+
+-- Get list title
+function List:get_list_title(key)
+    if self.lists[key] then
+        return self.lists[key].title
+    end
+    return nil
+end
+
+-- Get all list keys (user-defined identifiers)
+function List:get_all_keys()
+    local keys = {}
+    for key, _ in pairs(self.lists) do
+        table.insert(keys, key)
+    end
+    return keys
+end
+
+-- Get lists of a specific type
+function List:get_lists_by_type(type_name)
+    local result = {}
+    for key, config in pairs(self.lists) do
+        if config.type == type_name then
+            table.insert(result, { key = key, config = config })
+        end
+    end
+    return result
+end
+
+-- Get all items from all lists
 function List:get_all_items()
     local result = {}
     local harpoon = require("harpoon")
 
-    result.context = harpoon:list(self.context_list).items
-    result.cmd_context = harpoon:list(self.cmd_context_list).items
-    result.resources = harpoon:list(self.resources_list).items
-    result.instructions = harpoon:list(self.instructions_list).items
-    result.main = harpoon:list().items
+    for _, config in pairs(self:get_list()) do
+        result[config.key] = harpoon:list(config.list_name).items
+    end
 
     return result
 end
@@ -90,25 +132,28 @@ end
 ---@return table
 function List:get_combined_items()
     local combined_items = {}
-    local all_items = self.get_all_items(self)
+    local all_items = self:get_all_items()
 
-    for _, item in ipairs(all_items.instructions) do
-        table.insert(combined_items, { value = item.value, type = "INSTRUCTIONS" })
-    end
-
-    for _, item in ipairs(all_items.context) do
-        table.insert(combined_items, { value = item.value, type = "CONTEXT" })
-    end
-
-    for _, item in ipairs(all_items.resources) do
-        table.insert(combined_items, { value = item.value, type = "RESOURCES" })
-    end
-
-    for _, item in ipairs(all_items.cmd_context) do
-        table.insert(combined_items, { value = item.value, type = "CMD_CONTEXT" })
+    for list_key, items in pairs(all_items) do
+        local list_config = self.lists[list_key]
+        for _, item in ipairs(items) do
+            table.insert(combined_items, {
+                value = item.value,
+                type = string.upper(list_config.key),
+                list_type = list_config.type,
+                title = list_config.title
+            })
+        end
     end
 
     return combined_items
+end
+
+--- Add a new list configuration
+---@param key string The list identifier
+---@param config ListConfig The list configuration
+function List:add_list(key, config)
+    self.lists[key] = config
 end
 
 return List
