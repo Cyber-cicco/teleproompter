@@ -45,7 +45,12 @@ function Commands:add_command_to_list()
 end
 
 -- Execute all commands in command lists and copy their output
-function Commands:execute_commands_and_copy_output()
+function Commands:execute_commands_and_copy_output(copy_to_clipboard)
+    -- Default to true if not specified
+    if copy_to_clipboard == nil then
+        copy_to_clipboard = true
+    end
+
     local combined_output = ""
     local harpoon = require("harpoon")
 
@@ -84,12 +89,10 @@ function Commands:execute_commands_and_copy_output()
         end
     end
 
-    -- Copy to clipboard if there's any output
-    if combined_output ~= "" then
+    -- Copy to clipboard if requested and there's output
+    if copy_to_clipboard and combined_output ~= "" then
         vim.fn.setreg("+", combined_output)
         vim.notify("Command outputs copied to clipboard", vim.log.levels.INFO)
-    else
-        vim.notify("No commands to execute", vim.log.levels.WARN)
     end
 
     return combined_output

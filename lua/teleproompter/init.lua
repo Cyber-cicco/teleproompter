@@ -17,6 +17,8 @@ local Utils = require("teleproompter.utils")
 --- @class TeleProompterOpts
 --- @field lists table<string, ListConfig>
 --- @field keymaps KeyMapsOpts
+--- @field system_prompt_file string Path to system prompt file
+--- @field default_system_prompt string Default system prompt text
 local default_opts = {
     lists = {
         context = {
@@ -67,7 +69,19 @@ local default_opts = {
         exec_commands = "<leader>ye",
         copy_everything = "<leader>ya",
         telescope_toggle = "<C-e>"
-    }
+    },
+    -- Default system prompt configuration
+    system_prompt_file = vim.fn.stdpath("config") .. "/teleproompter_system_prompt.md",
+    default_system_prompt = [[
+# System Prompt
+You are a helpful AI assistant. You will be given context, instructions, and resources to help you respond to the user's request.
+
+1. First, carefully read and understand any context provided
+2. Follow the instructions given to you precisely
+3. Use the resources provided to inform your response
+4. Be concise yet thorough in your answers
+5. If you're unsure about something, acknowledge the uncertainty rather than making assumptions
+]]
 }
 
 --- Main entry point for teleproompter plugin
@@ -76,6 +90,7 @@ local default_opts = {
 --- @field keymaps KeyMapsOpts
 --- @field commands Commands
 --- @field utils Utils
+--- @field config TeleProompterOpts
 local Teleproompter = {}
 Teleproompter.__index = Teleproompter
 
@@ -95,6 +110,10 @@ function Teleproompter:new(user_opts)
     local list = Lists:new(opts.lists)
     local commands = Commands:new(list)
     local utils = Utils:new(list, commands)
+    
+    -- Pass the configuration to utils for system prompt handling
+    utils.config = opts
+    
     -- Store references
     local proompt = setmetatable({
         config = opts,
@@ -170,4 +189,3 @@ function Teleproompter:setup_keymaps()
 end
 
 return Teleproompter
-

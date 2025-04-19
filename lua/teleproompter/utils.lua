@@ -29,8 +29,43 @@ function Utils:read_file_content(filepath)
     return content
 end
 
--- Copy contents of all file-type lists to clipboard
-function Utils:copy_all_items_to_clipboard()
+function Utils:copy_everything_to_clipboard()
+    -- Get system prompt first
+    local system_prompt = self:get_system_prompt()
+
+    -- Get file content and command output
+    local file_content = self:copy_all_items_to_clipboard(false) -- Pass false to prevent clipboard copy
+    local command_output = self.commands:execute_commands_and_copy_output(false) -- Pass false to prevent clipboard copy
+
+    -- Combine content with system prompt at the beginning
+    local combined_content = system_prompt
+
+    if system_prompt ~= "" and (file_content ~= "" or command_output ~= "") then
+        combined_content = combined_content .. "\n\n"
+    end
+
+    combined_content = combined_content .. file_content
+
+    if file_content ~= "" and command_output ~= "" then
+        combined_content = combined_content .. "\n\n"
+    end
+
+    combined_content = combined_content .. command_output
+
+    -- Copy to clipboard
+    vim.fn.setreg("+", combined_content)
+    vim.notify("All content with system prompt copied to clipboard", vim.log.levels.INFO)
+
+    return combined_content
+end
+
+-- Update the copy_all_items_to_clipboard function to accept an optional parameter
+function Utils:copy_all_items_to_clipboard(copy_to_clipboard)
+    -- Default to true if not specified
+    if copy_to_clipboard == nil then
+        copy_to_clipboard = true
+    end
+
     local combined_content = ""
     local file_lists = self.lists:get_lists_by_type("file")
     local harpoon = require("harpoon")
@@ -61,29 +96,68 @@ function Utils:copy_all_items_to_clipboard()
         end
     end
 
-    -- Copy to clipboard
-    if combined_content ~= "" then
+    -- Copy to clipboard if requested
+    if copy_to_clipboard and combined_content ~= "" then
         vim.fn.setreg("+", combined_content)
         vim.notify("File contents copied to clipboard", vim.log.levels.INFO)
-    else
-        vim.notify("No file contents to copy", vim.log.levels.WARN)
     end
 
     return combined_content
 end
 
--- Copy everything (file contents and command outputs) to clipboard
-function Utils:copy_everything_to_clipboard()
-    local file_content = self:copy_all_items_to_clipboard()
-    local command_output = self.commands:execute_commands_and_copy_output()
+-- System prompt related functions
+-- Find project root directory (to locate TELEPROOMPTER.md)
+function Utils:find_project_root()
+    -- Try to find git root as project root
+    local current_file = vim.fn.expand('%:p')
+    local current_dir = vim.fn.fnamemodify(current_file, ':h')
 
-    local combined_content = file_content .. "\n\n" .. command_output
+    -- Start from current directory and traverse up
+    local path = current_dir
+    while path ~= '/' do
+        -- Check if .git directory exists (indicating git root)
+        if vim.fn.isdirectory(path .. '/.git') == 1 then
+            return path
+        end
+        -- Move up one directory
+        path = vim.fn.fnamemodify(path, ':h')
+    end
 
-    -- Copy to clipboard
-    vim.fn.setreg("+", combined_content)
-    vim.notify("All content copied to clipboard", vim.log.levels.INFO)
+    -- Fallback to current working directory if git root not found
+    return vim.fn.getcwd()
+end
 
-    return combined_content
+-- Get system prompt content
+function Utils:get_system_prompt()
+    local content = ""
+
+    -- Check for override in project root first
+    local project_root = self:find_project_root()
+    local override_path = project_root .. "/TELEPROOMPTER.md"
+
+    if vim.fn.filereadable(override_path) == 1 then
+        -- Read override file
+        local override_content, err = self:read_file_content(override_path)
+        if override_content then
+            return override_content
+        else
+            vim.notify("Error reading system prompt override: " .. (err or "Unknown error"), vim.log.levels.WARN)
+        end
+    end
+
+    -- Fall back to configured system prompt file
+    if self.config and self.config.system_prompt_file and vim.fn.filereadable(self.config.system_prompt_file) == 1 then
+        local file_content, err = self:read_file_content(self.config.system_prompt_file)
+        if file_content then
+            return file_content
+        else
+            vim.notify("Error reading system prompt file: " .. (err or "Unknown error"), vim.log.levels.WARN)
+        end
+    end
+
+    -- Use default system prompt if no file is available
+    return self.config and self.config.default_system_prompt or 
+        "You are a helpful AI assistant. Answer questions accurately and concisely."
 end
 
 return Utils
