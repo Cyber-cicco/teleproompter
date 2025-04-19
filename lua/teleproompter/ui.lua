@@ -57,13 +57,11 @@ function ui.show_all_lists_window(lists)
         table.insert(content, string.rep("-", string.len(header)))
 
         local list_items = harpoon:list(list_name).items
-        -- Sort items by order
-        list_items = lists:sort_items_by_order(list_items)
 
         if #list_items > 0 then
             for i, item in ipairs(list_items) do
                 local order = item.context and item.context.order or "-"
-                table.insert(content, string.format("%d. [Order: %s] %s", i, order, item.value))
+                table.insert(content, string.format("%d. %s", i, item.value))
             end
         else
             table.insert(content, "No items in " .. list_title .. " list")
